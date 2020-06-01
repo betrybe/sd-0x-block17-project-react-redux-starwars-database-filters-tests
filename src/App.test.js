@@ -14,16 +14,6 @@ import reducer from './reducers';
 
 const store = createStore(reducer, applyMiddleware(thunk));
 
-test('renders learn react link', () => {
-  const { getByText } = render(
-    <Provider store={store}>
-      <App />
-    </Provider>,
-  );
-  const linkElement = getByText(/Loading.../i);
-  expect(linkElement).toBeInTheDocument();
-});
-
 const renderApp = () => {
   return render(
     <Provider store={store}>
@@ -37,7 +27,7 @@ const mockFetch = () => {
   global.fetch = jest.fn(() => apiResponse);
 }
 
-describe('Requisite 1', () => {
+describe('1 - Fazer uma requisição para o endpoint /planets da API de Star Wars e preencher uma tabela com os dados retornados, com exceção dos da coluna residents', () => {
   beforeAll(mockFetch);
   beforeEach(cleanup);
 
@@ -86,7 +76,7 @@ describe('Requisite 1', () => {
 
 })
 
-describe('Requisite 2', () => {
+describe('2 - Sua página deve ter um campo de texto que filtra a tabela para somente exibir planetas cujos nomes incluam o texto digitado', () => {
 
   beforeAll(mockFetch);
   beforeEach(cleanup);
@@ -133,7 +123,7 @@ describe('Requisite 2', () => {
   })
 })
 
-describe('Requisite 3', () => {
+describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
 
   beforeAll(mockFetch);
   beforeEach(cleanup);
@@ -271,7 +261,7 @@ describe('Requisite 3', () => {
 
 })
 
-describe('Requisite 4', () => {
+describe('4 -  Sua página deverá ser carregada com somente um filtro de valores numéricos', () => {
   test('check avaiable filters', async () => {
     const { findByTestId } = renderApp();
 
@@ -292,7 +282,7 @@ describe('Requisite 4', () => {
   })
 })
 
-describe('Requisite 5', () => {
+describe('5 - Cada filtro de valores numéricos deve ter um ícone de X que, ao ser clicado, o apaga e desfaz suas filtragens dos dados da tabela', () => {
   test('should show the previously selected filters', async () => {
     const { findAllByTestId, findByText } = renderApp();
     const selectedFilters = await findAllByTestId('filter');
@@ -315,7 +305,7 @@ describe('Requisite 5', () => {
   });
 })
 
-describe('Requisite 6', () => {
+describe('6 - As colunas da tabela devem ser ordenáveis de forma ascendente ou descendente', () => {
   test('check planet table starting order', async () => {
     let sortedPlanets = [];
     for(let planet of testData.results) {
