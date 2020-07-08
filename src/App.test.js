@@ -10,16 +10,22 @@ import testData from './testData';
 import App from './App';
 import reducer from './reducers';
 
-let store = createStore(reducer, applyMiddleware(thunk));
-const initialState = store.getState();
+const getStore = (initialState) => {
+  if (!initialState) return createStore(reducer, applyMiddleware(thunk));
+  return createStore(reducer, initialState, applyMiddleware(thunk));
+};
 
-const renderApp = (initial = initialState) => {
-  store = createStore(reducer, initial, applyMiddleware(thunk));
-  return render(
-    <Provider store={store}>
-      <App />
-    </Provider>,
-  );
+const renderApp = (initialState) => {
+  const store = getStore(initialState);
+
+  return {
+    ...render(
+      <Provider store={store}>
+        <App />
+      </Provider>,
+    ),
+    store,
+  };
 };
 
 const mockFetch = () => {
@@ -114,7 +120,7 @@ describe('2 - Sua página deve ter um campo de texto que filtra a tabela para so
   });
 
   test('should change store filter values', async () => {
-    const { findByTestId } = renderApp();
+    const { findByTestId, store } = renderApp();
     const filterField = await findByTestId('name-filter');
     fireEvent.change(filterField, { target: { value: 'o' } });
     expect(store.getState().filters.filterByName.name).toEqual('o');
@@ -138,11 +144,13 @@ describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
 
     expect(columnFilter.children).toHaveLength(6);
 
-    const expectedColumnFilters = ['population',
+    const expectedColumnFilters = [
+      'population',
       'orbital_period',
       'diameter',
       'rotation_period',
-      'surface_water'];
+      'surface_water',
+    ];
 
     const foundColumnFilterArray = [];
 
@@ -151,7 +159,6 @@ describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
       expect(item).toHaveProperty('nodeName', 'OPTION');
       foundColumnFilterArray.push(item.innerHTML);
     }
-
 
     expect(foundColumnFilterArray).toEqual(expect.arrayContaining(expectedColumnFilters));
   });
@@ -165,10 +172,11 @@ describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
 
     expect(comparisonFilter.children).toHaveLength(4);
 
-
-    const expectedColumnComparisons = ['maior que',
+    const expectedColumnComparisons = [
+      'maior que',
       'igual a',
-      'menor que'];
+      'menor que',
+    ];
 
     const foundComparisonFilterArray = [];
 
@@ -198,7 +206,7 @@ describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
   });
 
   test('should filter with less than', async () => {
-    const { findByTestId, findAllByRole } = renderApp();
+    const { findByTestId, findAllByRole, store } = renderApp();
 
     const columnFilter = await findByTestId('column-filter');
     const comparisonFilter = await findByTestId('comparison-filter');
@@ -220,16 +228,19 @@ describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
   });
 
   test('should filter with greather than', async () => {
+    const initialState = getStore().getState();
     const initial = {
       ...initialState,
       filters:
       {
         ...initialState.filters,
         filterByNumericValues:
-        [{ column: 'surface_water', comparison: 'menor que', value: '40' }],
+        [
+          { column: 'surface_water', comparison: 'menor que', value: '40' },
+        ],
       },
     };
-    const { findByTestId, findAllByRole } = renderApp(initial);
+    const { findByTestId, findAllByRole, store } = renderApp(initial);
 
     const columnFilter = await findByTestId('column-filter');
     const comparisonFilter = await findByTestId('comparison-filter');
@@ -253,17 +264,27 @@ describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
   });
 
   test('should filter with equal to', async () => {
+    const initialState = getStore().getState();
+
     const initial = {
       ...initialState,
       filters:
       {
         ...initialState.filters,
         filterByNumericValues:
-        [{ column: 'surface_water', comparison: 'menor que', value: '40' },
-          { column: 'diameter', comparison: 'maior que', value: '8900' }],
+        [
+          { column: 'surface_water', comparison: 'menor que', value: '40' },
+          { column: 'diameter', comparison: 'maior que', value: '8900' }
+        ],
       },
     };
-    const { findByTestId, findAllByRole, findByText } = renderApp(initial);
+
+    const {
+      findByTestId,
+      findAllByRole,
+      findByText,
+      store,
+    } = renderApp(initial);
 
     const columnFilter = await findByTestId('column-filter');
     const comparisonFilter = await findByTestId('comparison-filter');
@@ -291,19 +312,21 @@ describe('3 - Sua página deve ter um filtro para valores numéricos', () => {
 
 describe('4 -  Sua página deverá ser carregada com somente um filtro de valores numéricos', () => {
   test('check avaiable filters', async () => {
+    const initialState = getStore().getState();
+
     const initial = {
       ...initialState,
       filters:
       {
         ...initialState.filters,
         filterByNumericValues:
-        [{ column: 'surface_water', comparison: 'menor que', value: '40' },
+        [
+          { column: 'surface_water', comparison: 'menor que', value: '40' },
           { column: 'diameter', comparison: 'maior que', value: '8900' },
-          { column: 'population', comparison: 'igual a', value: '200000' }],
-
+          { column: 'population', comparison: 'igual a', value: '200000' },
+        ],
       },
     };
-
 
     const { findByTestId } = renderApp(initial);
 
@@ -311,8 +334,10 @@ describe('4 -  Sua página deverá ser carregada com somente um filtro de valore
 
     expect(columnFilter.children).toHaveLength(3);
 
-    const expectedColumnFilters = ['orbital_period',
-      'rotation_period'];
+    const expectedColumnFilters = [
+      'orbital_period',
+      'rotation_period',
+    ];
 
     const foundColumnFilterArray = [];
 
@@ -327,16 +352,19 @@ describe('4 -  Sua página deverá ser carregada com somente um filtro de valore
 
 describe('5 - Cada filtro de valores numéricos deve ter um ícone de X que, ao ser clicado, o apaga e desfaz suas filtragens dos dados da tabela', () => {
   test('should show the previously selected filters', async () => {
+    const initialState = getStore().getState();
+
     const initial = {
       ...initialState,
       filters:
       {
         ...initialState.filters,
         filterByNumericValues:
-        [{ column: 'surface_water', comparison: 'menor que', value: '40' },
+        [
+          { column: 'surface_water', comparison: 'menor que', value: '40' },
           { column: 'diameter', comparison: 'maior que', value: '8900' },
-          { column: 'population', comparison: 'igual a', value: '200000' }],
-
+          { column: 'population', comparison: 'igual a', value: '200000' },
+        ],
       },
     };
 
@@ -346,20 +374,23 @@ describe('5 - Cada filtro de valores numéricos deve ter um ícone de X que, ao 
   });
 
   test('each filter should have a X button that removes the filter', async () => {
+    const initialState = getStore().getState();
+
     const initial = {
       ...initialState,
       filters:
       {
         ...initialState.filters,
         filterByNumericValues:
-        [{ column: 'surface_water', comparison: 'menor que', value: '40' },
+        [
+          { column: 'surface_water', comparison: 'menor que', value: '40' },
           { column: 'diameter', comparison: 'maior que', value: '8900' },
-          { column: 'population', comparison: 'igual a', value: '200000' }],
-
+          { column: 'population', comparison: 'igual a', value: '200000' },
+        ],
       },
     };
 
-    const { findAllByTestId, queryAllByTestId } = renderApp(initial);
+    const { findAllByTestId, queryAllByTestId, store } = renderApp(initial);
     let selectedFilters = await findAllByTestId('filter');
     let removeButton = selectedFilters[0].querySelector('button');
 
@@ -373,7 +404,7 @@ describe('5 - Cada filtro de valores numéricos deve ter um ícone de X que, ao 
     removeButton = selectedFilters[0].querySelector('button');
     fireEvent.click(removeButton);
 
-    selectedFilters = await queryAllByTestId('filter');
+    selectedFilters = queryAllByTestId('filter');
 
     expect(selectedFilters).toHaveLength(0);
     expect(store.getState().filters.filterByNumericValues).toHaveLength(0);
@@ -389,10 +420,9 @@ describe('6 - As colunas da tabela devem ser ordenáveis de forma ascendente ou 
       sortedPlanets.push(planet.name);
     }
 
-
     sortedPlanets = sortedPlanets.sort();
 
-    const { findAllByRole, findByText } = renderApp();
+    const { findAllByRole, findByText, store } = renderApp();
     await findByText(testData.results[0].name);
     const rows = await findAllByRole('row');
     const appPlanetList = [];
@@ -401,7 +431,6 @@ describe('6 - As colunas da tabela devem ser ordenáveis de forma ascendente ou 
       const row = rows[index];
       appPlanetList.push(row.children[0].innerHTML);
     }
-
 
     appPlanetList.shift();
     expect(sortedPlanets).toEqual(appPlanetList);
@@ -417,7 +446,6 @@ describe('6 - As colunas da tabela devem ser ordenáveis de forma ascendente ou 
       sortedPlanets.push(parseInt(planet.diameter, 10));
     }
 
-
     sortedPlanets = sortedPlanets.sort((a, b) => a - b);
 
     const { findByTestId, findAllByTestId, findAllByRole } = renderApp();
@@ -431,7 +459,7 @@ describe('6 - As colunas da tabela devem ser ordenáveis de forma ascendente ou 
 
     fireEvent.click(ascInput);
 
-    await fireEvent.click(sortButton);
+    fireEvent.click(sortButton);
 
     const rows = await findAllByRole('row');
     const appPlanetList = [];
